@@ -30,7 +30,14 @@ export default function RequestSongPage() {
       }
 
       const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.from("song_requests").insert([
+      const db = supabase as unknown as {
+        from: (table: string) => {
+          insert: (values: Array<{ title: string; artist: string; note: string | null }>) => Promise<{
+            error: { message: string } | null;
+          }>;
+        };
+      };
+      const { error } = await db.from("song_requests").insert([
         {
           title: titleValue,
           artist: artistValue,
