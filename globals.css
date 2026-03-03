@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f3efe8;
+  --foreground: #17150f;
+  --surface: #fffdf8;
+  --line: #d7c9b2;
+  --accent: #0f8a6f;
+  --accent-strong: #0a6a56;
+  --danger: #9d2f2f;
+  --shadow: 0 16px 40px rgba(23, 21, 15, 0.08);
+  --font-ui: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+  --font-code: "Menlo", "Consolas", "Liberation Mono", monospace;
+}
+
+html.dark {
+  --background: #131313;
+  --foreground: #f7f2e9;
+  --surface: #1e1b16;
+  --line: #3f3627;
+  --accent: #26b894;
+  --accent-strong: #1c9f80;
+  --danger: #ff7b7b;
+  --shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-code);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-ui);
+  min-height: 100vh;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+.grain {
+  background:
+    radial-gradient(circle at 80% 10%, rgba(15, 138, 111, 0.22), transparent 40%),
+    radial-gradient(circle at 10% 20%, rgba(120, 92, 49, 0.2), transparent 35%),
+    linear-gradient(180deg, #f9f6ef 0%, #f3efe8 100%);
+}
+
+html.dark .grain {
+  background:
+    radial-gradient(circle at 80% 10%, rgba(38, 184, 148, 0.26), transparent 40%),
+    radial-gradient(circle at 10% 20%, rgba(77, 58, 31, 0.35), transparent 35%),
+    linear-gradient(180deg, #161412 0%, #131313 100%);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+.mono {
+  font-family: var(--font-code);
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background: #252019 !important;
+  border-color: #4b3f2d !important;
+  color: #f7f2e9 !important;
+  -webkit-text-fill-color: #f7f2e9 !important;
+  caret-color: #f7f2e9 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #b9ab94 !important;
+  opacity: 1;
+}
+
+html.dark select option {
+  background: #252019;
+  color: #f7f2e9;
+}
+
+/* Normalize hardcoded light utility colors in dark mode. */
+html.dark [class*="text-[#"] {
+  color: #d8ccb9 !important;
+}
+
+html.dark [class*="border-[#"] {
+  border-color: #4b3f2d !important;
+}
+
+html.dark [class*="bg-[#fffcf6]"],
+html.dark [class*="bg-white"] {
+  background: #252019 !important;
+}
+
+html.dark .card article {
+  background: #252019 !important;
+  border-color: #4b3f2d !important;
+}
+
+html.dark .card a.mono,
+html.dark .card button.mono {
+  background: #252019 !important;
+  border-color: #4b3f2d !important;
+  color: #e6dbc8 !important;
+}
+
+html.dark a {
+  color: inherit;
+}
