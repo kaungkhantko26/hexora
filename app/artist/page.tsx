@@ -90,68 +90,56 @@ function ArtistSongsContent() {
   }, [slug]);
 
   return (
-    <main className="grain min-h-screen">
-      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 md:px-8">
+    <main className="grain">
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 md:px-8">
         <UserNav />
-        <section className="card rounded-3xl p-6">
-          <Link
-            href="/artist-profiles"
-            className="mono rounded-lg border border-[#d7c9b2] bg-[#fffcf6] px-3 py-2 text-xs uppercase tracking-widest text-[#5a503f] transition hover:bg-[#f4ecdf]"
-          >
-            Back to artist profiles
+        <section className="card rounded-3xl p-6 md:p-8">
+          <Link href="/artist-profiles" className="btn btn-secondary btn-mono">
+            Back to Artist Profiles
           </Link>
 
           {isLoading ? (
-            <p className="mt-4 text-sm text-[#6b604e]">Loading artist songs...</p>
+            <p className="body-copy mt-5">Loading artist songs...</p>
           ) : error ? (
-            <p className="mt-4 text-sm text-[var(--danger)]">{error}</p>
+            <p className="status-box status-error mt-5">{error}</p>
           ) : (
             <>
-              <h1 className="mt-4 text-3xl font-semibold leading-tight">{artistProfile?.name}</h1>
-              <p className="mt-2 text-sm text-[#4e4537]">{artistProfile?.genre || "No genre yet."}</p>
+              <header className="mt-5 grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+                <div>
+                  <p className="eyebrow">Artist Page</p>
+                  <h1 className="display-title mt-2">{artistProfile?.name}</h1>
+                  <p className="body-copy mt-2">{artistProfile?.genre || "No genre yet."}</p>
+                  {artistProfile?.bio ? <p className="body-copy mt-2 max-w-3xl">{artistProfile.bio}</p> : null}
+                </div>
+                <div className="ui-chip">{songs.length} songs</div>
+              </header>
 
-              <h2 className="mt-6 text-2xl font-semibold">Song List</h2>
-              <div className="mt-3 space-y-3">
+              <h2 className="mt-8 text-xl font-semibold">Song List</h2>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
                 {songs.length === 0 ? (
-                  <p className="text-sm text-[#6b604e]">No songs found for this artist.</p>
+                  <p className="body-copy md:col-span-2">No songs found for this artist.</p>
                 ) : (
                   songs.map((song) => (
-                    <article
-                      key={song.id}
-                      className="rounded-2xl border border-[#e1d4c0] bg-[#fffcf6] p-4"
-                    >
-                      <Link
-                        href={`/song?id=${song.id}`}
-                        className="text-lg font-semibold underline-offset-2 hover:underline"
-                      >
+                    <article key={song.id} className="card rounded-2xl p-4">
+                      <Link href={`/song?id=${song.id}`} className="text-lg font-semibold underline-offset-2 hover:underline">
                         {song.title}
                       </Link>
-                      <p className="mono text-xs text-[#726758]">{song.artist}</p>
-                      <div className="mt-2 flex flex-wrap gap-2">
+                      <p className="mono mt-1 text-xs text-[var(--muted)]">{song.artist}</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
                         {song.youtube_url ? (
-                          <a
-                            href={song.youtube_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mono rounded-md border border-[#d7c9b2] bg-white px-2 py-1 text-[10px] uppercase tracking-widest text-[#5f5444]"
-                          >
+                          <a href={song.youtube_url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-mono">
                             YouTube
                           </a>
                         ) : null}
                         {song.spotify_url ? (
-                          <a
-                            href={song.spotify_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mono rounded-md border border-[#d7c9b2] bg-white px-2 py-1 text-[10px] uppercase tracking-widest text-[#5f5444]"
-                          >
+                          <a href={song.spotify_url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-mono">
                             Spotify
                           </a>
                         ) : null}
+                        <Link href={`/song?id=${song.id}`} className="btn btn-secondary btn-mono">
+                          Lyrics
+                        </Link>
                       </div>
-                      <p className="mt-2 line-clamp-4 whitespace-pre-wrap text-sm text-[#332d24]">
-                        {song.lyrics}
-                      </p>
                     </article>
                   ))
                 )}
@@ -168,11 +156,11 @@ export default function ArtistSongsPage() {
   return (
     <Suspense
       fallback={
-        <main className="grain min-h-screen">
-          <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 md:px-8">
+        <main className="grain">
+          <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 md:px-8">
             <UserNav />
             <section className="card rounded-3xl p-6">
-              <p className="text-sm text-[#6b604e]">Loading artist songs...</p>
+              <p className="body-copy">Loading artist songs...</p>
             </section>
           </div>
         </main>

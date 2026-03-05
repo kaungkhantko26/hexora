@@ -48,49 +48,50 @@ export default function ArtistProfilesPage() {
   }
 
   return (
-    <main className="grain min-h-screen">
-      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 md:px-8">
+    <main className="grain">
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 md:px-8">
         <UserNav />
-        <section className="card rounded-3xl p-6">
-          <h1 className="text-3xl font-semibold leading-tight">Artist Profile List</h1>
-          <p className="mt-2 text-sm text-[#4e4537]">
-            Browse artist profiles before searching for songs.
-          </p>
 
-          <form onSubmit={onSearchArtists} className="mt-4 flex gap-2">
+        <section className="card rounded-3xl p-6 md:p-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="eyebrow">Artist Directory</p>
+              <h1 className="display-title mt-2">Find artists and open their song collections.</h1>
+              <p className="body-copy mt-2">Search by artist name or genre.</p>
+            </div>
+            <div className="ui-chip">{artistProfiles.length} artists</div>
+          </div>
+
+          <form onSubmit={onSearchArtists} className="mt-6 flex flex-col gap-2 md:flex-row">
             <input
               value={artistQuery}
               onChange={(e) => setArtistQuery(e.target.value)}
-              className="w-full rounded-xl border border-[#d7c9b2] bg-white px-3 py-2 text-sm outline-none ring-[#0f8a6f]/35 focus:ring-4"
+              className="ui-input"
               placeholder="Search artist profiles..."
             />
-            <button
-              type="submit"
-              className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)]"
-            >
-              Find
+            <button type="submit" className="btn btn-primary md:min-w-32">
+              Search
             </button>
           </form>
 
-          {artistError ? <p className="mt-3 text-sm text-[var(--danger)]">{artistError}</p> : null}
+          {artistError ? <p className="status-box status-error mt-4">{artistError}</p> : null}
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {isArtistLoading ? (
-              <p className="text-sm text-[#6b604e]">Loading artist profiles...</p>
+              <p className="body-copy md:col-span-2 lg:col-span-3">Loading artist profiles...</p>
             ) : artistProfiles.length === 0 ? (
-              <p className="text-sm text-[#6b604e]">No artist profiles found.</p>
+              <p className="body-copy md:col-span-2 lg:col-span-3">No artist profiles found.</p>
             ) : (
               artistProfiles.map((profile) => (
                 <Link
                   key={profile.id}
                   href={`/artist?slug=${encodeURIComponent(profile.slug)}`}
-                  className="block rounded-2xl border border-[#e1d4c0] bg-[#fffcf6] p-4"
+                  className="card rounded-2xl p-4 transition hover:-translate-y-0.5"
                 >
                   <h3 className="text-lg font-semibold">{profile.name}</h3>
-                  <p className="mt-1 text-sm text-[#4d4538]">{profile.genre || "No genre yet."}</p>
-                  <p className="mono mt-2 text-xs uppercase tracking-widest text-[#6f6454]">
-                    View songs
-                  </p>
+                  <p className="mt-1 text-sm text-[var(--muted)]">{profile.genre || "No genre yet."}</p>
+                  {profile.bio ? <p className="mt-2 line-clamp-3 text-sm text-[var(--muted)]">{profile.bio}</p> : null}
+                  <p className="eyebrow mt-3">View Songs</p>
                 </Link>
               ))
             )}

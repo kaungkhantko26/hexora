@@ -6,20 +6,16 @@ import { getSupabaseBrowserClient, type ArtistProfile, type Lyric } from "@/lib/
 import UserNav from "@/components/user-nav";
 
 export default function SongNamesPage() {
-  const [songNames, setSongNames] = useState<Array<{ id: number; title: string; artist: string }>>(
-    []
-  );
+  const [songNames, setSongNames] = useState<Array<{ id: number; title: string; artist: string }>>([]);
   const [songQuery, setSongQuery] = useState("");
   const [artistSlugByName, setArtistSlugByName] = useState<Record<string, string>>({});
   const [isSongListLoading, setIsSongListLoading] = useState(true);
   const [songListError, setSongListError] = useState("");
+
   const normalizedQuery = songQuery.trim().toLowerCase();
   const filteredSongNames = songNames.filter((song) => {
     if (!normalizedQuery) return true;
-    return (
-      song.title.toLowerCase().includes(normalizedQuery) ||
-      song.artist.toLowerCase().includes(normalizedQuery)
-    );
+    return song.title.toLowerCase().includes(normalizedQuery) || song.artist.toLowerCase().includes(normalizedQuery);
   });
 
   useEffect(() => {
@@ -62,55 +58,73 @@ export default function SongNamesPage() {
   }, []);
 
   return (
-    <main className="grain min-h-screen">
-      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 md:px-8">
+    <main className="grain">
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 md:px-8">
         <UserNav />
-        <section className="card rounded-3xl p-6">
-          <h1 className="text-3xl font-semibold leading-tight">Song Names</h1>
-          <p className="mt-2 text-sm text-[#4e4537]">All song names currently in the lyrics library.</p>
-          <input
-            value={songQuery}
-            onChange={(e) => setSongQuery(e.target.value)}
-            className="mt-4 w-full rounded-xl border border-[#d7c9b2] bg-white px-3 py-2 text-sm outline-none ring-[#0f8a6f]/35 focus:ring-4"
-            placeholder="Search by song title or artist..."
-          />
 
-          {songListError ? <p className="mt-3 text-sm text-[var(--danger)]">{songListError}</p> : null}
+        <section className="card rounded-3xl p-6 md:p-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="eyebrow">Song Index</p>
+              <h1 className="display-title mt-2">Browse every song title in the library.</h1>
+              <p className="body-copy mt-2">Use the search box to narrow by title or artist in real time.</p>
+            </div>
+            <div className="ui-chip">{filteredSongNames.length} shown</div>
+          </div>
 
-          <div className="mt-4 space-y-3">
+          <label className="ui-label mt-6">
+            <span>Search Songs</span>
+            <input
+              value={songQuery}
+              onChange={(e) => setSongQuery(e.target.value)}
+              className="ui-input"
+              placeholder="Search by song title or artist..."
+            />
+          </label>
+
+          {songListError ? <p className="status-box status-error mt-4">{songListError}</p> : null}
+
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
             {isSongListLoading ? (
-              <p className="text-sm text-[#6b604e]">Loading song names...</p>
+              <p className="body-copy md:col-span-2">Loading song names...</p>
             ) : filteredSongNames.length === 0 ? (
-              <p className="text-sm text-[#6b604e]">
+              <p className="body-copy md:col-span-2">
                 {songNames.length === 0 ? "No song names yet." : "No songs match your search."}
               </p>
             ) : (
-              filteredSongNames.map((song, index) => (
-                <article
-                  key={`${song.id}-${index}`}
-                  className="rounded-2xl border border-[#e1d4c0] bg-[#fffcf6] p-4"
-                >
-                  <Link
-                    href={`/song?id=${song.id}`}
-                    className="text-lg font-semibold underline-offset-2 hover:underline"
-                  >
-                    {song.title}
-                  </Link>
-                  {artistSlugByName[song.artist.toLowerCase()] ? (
-                    <Link
-                      href={`/artist?slug=${encodeURIComponent(artistSlugByName[song.artist.toLowerCase()])}`}
-                      className="mono text-xs text-[#726758] underline-offset-2 hover:underline"
-                    >
-                      {song.artist}
+              filteredSongNames.map((song, index) => {
+                const artistSlug = artistSlugByName[song.artist.toLowerCase()];
+                return (
+                  <article key={`${song.id}-${index}`} className="card rounded-2xl p-4">
+                    <Link href={`/song?id=${song.id}`} className="text-lg font-semibold underline-offset-2 hover:underline">
+                      {song.title}
                     </Link>
-                  ) : (
-                    <p className="mono text-xs text-[#726758]">{song.artist}</p>
-                  )}
-                  <p className="mono mt-2 text-xs uppercase tracking-widest text-[#6f6454]">
-                    View lyrics
-                  </p>
-                </article>
-              ))
+                    {artistSlug ? (
+                      <Link
+                        href={`/artist?slug=${encodeURIComponent(artistSlug)}`}
+                        className="mono mt-1 block text-xs text-[var(--muted)] underline-offset-2 hover:underline"
+                      >
+                        {song.artist}
+                      </Link>
+                    ) : (
+                      <p className="mono mt-1 text-xs text-[var(--muted)]">{song.artist}</p>
+                    )}
+                    <div className="mt-3 flex gap-2">
+                      <Link href={`/song?id=${song.id}`} className="btn btn-secondary btn-mono">
+                        View Lyrics
+                      </Link>
+                      {artistSlug ? (
+                        <Link
+                          href={`/artist?slug=${encodeURIComponent(artistSlug)}`}
+                          className="btn btn-secondary btn-mono"
+                        >
+                          Artist Page
+                        </Link>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })
             )}
           </div>
         </section>

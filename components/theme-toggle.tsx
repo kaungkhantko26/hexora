@@ -9,30 +9,35 @@ function applyTheme(theme: Theme) {
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "light";
-    return localStorage.getItem("theme") === "dark" ? "dark" : "light";
-  });
+  const [theme, setTheme] = useState<Theme>("light");
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    const savedTheme: Theme = localStorage.getItem("theme") === "dark" ? "dark" : "light";
+    setTheme(savedTheme);
+    applyTheme(savedTheme);
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
     applyTheme(theme);
-  }, [theme]);
+    localStorage.setItem("theme", theme);
+  }, [theme, isMounted]);
 
   function onToggle() {
     const nextTheme: Theme = theme === "light" ? "dark" : "light";
     setTheme(nextTheme);
-    applyTheme(nextTheme);
-    localStorage.setItem("theme", nextTheme);
   }
 
   return (
     <button
       type="button"
       onClick={onToggle}
-      className="mono fixed right-4 bottom-4 z-50 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-xs uppercase tracking-widest text-[var(--foreground)] shadow-[var(--shadow)] transition hover:opacity-85"
+      className="btn btn-secondary btn-mono fixed right-4 bottom-4 z-50 shadow-[var(--shadow-soft)]"
       aria-label="Toggle light and dark theme"
     >
-      Toggle Theme
+      {isMounted ? (theme === "light" ? "Dark Mode" : "Light Mode") : "Theme"}
     </button>
   );
 }

@@ -37,6 +37,8 @@ function makeSlug(value: string): string {
   return `${base}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+type AuthStatus = "checking" | "authenticated" | "unauthenticated";
+
 export default function AdminPage() {
   const [lyrics, setLyrics] = useState<Lyric[]>([]);
   const [editingLyricId, setEditingLyricId] = useState<number | null>(null);
@@ -60,6 +62,12 @@ export default function AdminPage() {
   const [artistError, setArtistError] = useState("");
   const artistFormRef = useRef<HTMLDivElement | null>(null);
   const lyricsFormRef = useRef<HTMLDivElement | null>(null);
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("checking");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
+  const [authError, setAuthError] = useState("");
 
   const activeLyricsArtist = activeLyricsArtistId
     ? artistProfiles.find((profile) => String(profile.id) === activeLyricsArtistId) ?? null
@@ -124,9 +132,88 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+    let isActive = true;
+
+    async function initAuth() {
+      const { data, error } = await supabase.auth.getSession();
+      if (!isActive) return;
+
+      if (error) {
+        setAuthStatus("unauthenticated");
+        setAuthError("Unable to check admin session.");
+        return;
+      }
+
+      if (data.session?.user) {
+        setAdminEmail(data.session.user.email ?? "");
+        setAuthStatus("authenticated");
+        setAuthError("");
+      } else {
+        setAuthStatus("unauthenticated");
+      }
+    }
+
+    initAuth();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isActive) return;
+
+      if (session?.user) {
+        setAdminEmail(session.user.email ?? "");
+        setAuthStatus("authenticated");
+        setAuthError("");
+      } else {
+        setAdminEmail("");
+        setAuthStatus("unauthenticated");
+      }
+    });
+
+    return () => {
+      isActive = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
     loadLyrics();
     loadArtistProfiles();
-  }, []);
+  }, [authStatus]);
+
+  async function onSignIn(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (isAuthSubmitting) return;
+
+    setIsAuthSubmitting(true);
+    setAuthError("");
+    try {
+      const email = loginEmail.trim();
+      const password = loginPassword;
+      if (!email || !password) throw new Error("Email and password are required.");
+
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw new Error(error.message);
+
+      setLoginPassword("");
+    } catch (e) {
+      setAuthError(e instanceof Error ? e.message : "Failed to sign in.");
+    } finally {
+      setIsAuthSubmitting(false);
+    }
+  }
+
+  async function onSignOut() {
+    setAuthError("");
+    const supabase = getSupabaseBrowserClient();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      setAuthError(error.message);
+    }
+  }
 
   async function onSubmitArtist(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -389,46 +476,115 @@ export default function AdminPage() {
     setArtistGenre("");
   }
 
+  if (authStatus === "checking") {
+    return (
+      <main className="grain">
+        <div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-8">
+          <section className="card rounded-3xl p-6">
+            <p className="body-copy">Checking admin session...</p>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  if (authStatus === "unauthenticated") {
+    return (
+      <main className="grain">
+        <div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-8">
+          <section className="card rounded-3xl p-6 md:p-8">
+            <p className="eyebrow">Admin Access</p>
+            <h1 className="display-title mt-2">Welcome Admin</h1>
+            <p className="body-copy mt-2">Sign in is required to open the admin dashboard.</p>
+
+            <form onSubmit={onSignIn} className="mt-6 space-y-4">
+              <label className="ui-label">
+                <span>Email</span>
+                <input
+                  type="email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  className="ui-input"
+                  placeholder="admin@example.com"
+                  required
+                  autoComplete="email"
+                />
+              </label>
+
+              <label className="ui-label">
+                <span>Password</span>
+                <input
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  className="ui-input"
+                  placeholder="••••••••"
+                  required
+                  autoComplete="current-password"
+                />
+              </label>
+
+              <button type="submit" disabled={isAuthSubmitting} className="btn btn-primary w-full">
+                {isAuthSubmitting ? "Signing In..." : "Sign In to Admin"}
+              </button>
+            </form>
+
+            {authError ? <p className="status-box status-error mt-4">{authError}</p> : null}
+
+            <div className="mt-4">
+              <Link href="/" className="btn btn-secondary btn-mono">
+                Back to User Page
+              </Link>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main className="grain min-h-screen">
+    <main className="grain">
       <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 px-4 py-8 md:px-8 lg:grid-cols-[380px_1fr]">
         <section className="space-y-6">
           <div ref={artistFormRef} className="card rounded-3xl p-6">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="mono text-xs uppercase tracking-[0.18em] text-[#6b604e]">Admin Side</p>
-              <Link
-                href="/"
-                className="mono rounded-xl border border-[#d7c9b2] bg-[#fffcf6] px-3 py-2 text-xs uppercase tracking-widest text-[#5a503f] transition hover:bg-[#f4ecdf]"
-              >
-                User page
-              </Link>
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="eyebrow">Welcome Admin</p>
+                <h1 className="display-title mt-2">Artist Profiles</h1>
+                {adminEmail ? <p className="mono mt-2 text-xs text-[var(--muted)]">{adminEmail}</p> : null}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link href="/" className="btn btn-secondary btn-mono">
+                  User Page
+                </Link>
+                <button type="button" onClick={onSignOut} className="btn btn-secondary btn-mono">
+                  Sign Out
+                </button>
+              </div>
             </div>
-            <h1 className="text-3xl font-semibold leading-tight">Artist Profile List</h1>
-            <p className="mt-2 text-sm text-[#4e4537]">
+            <p className="body-copy">
               {editingArtistId ? "Update artist profile details." : "Add artist profiles for users to browse."}
             </p>
 
             <form onSubmit={onSubmitArtist} className="mt-4 space-y-3">
-              <label className="block">
-                <span className="mono text-xs uppercase tracking-widest text-[#685d4d]">
-                  Artist Name
-                </span>
+              <label className="ui-label">
+                <span>Artist Name</span>
                 <input
                   value={artistName}
                   onChange={(e) => setArtistName(e.target.value)}
                   required
-                  className="mt-1 w-full rounded-xl border border-[#d7c9b2] bg-white px-3 py-2 text-sm outline-none ring-[#0f8a6f]/35 focus:ring-4"
+                  className="ui-input"
                   placeholder="Artist name"
                 />
               </label>
 
-              <label className="block">
-                <span className="mono text-xs uppercase tracking-widest text-[#685d4d]">Genre</span>
+              <label className="ui-label">
+                <span>Genre</span>
                 <input
                   value={artistGenre}
                   onChange={(e) => setArtistGenre(e.target.value)}
                   required
-                  className="mt-1 w-full rounded-xl border border-[#d7c9b2] bg-white px-3 py-2 text-sm outline-none ring-[#0f8a6f]/35 focus:ring-4"
+                  className="ui-input"
                   placeholder="Pop, Rock, Hip-hop..."
                 />
               </label>
@@ -436,7 +592,7 @@ export default function AdminPage() {
               <button
                 type="submit"
                 disabled={isArtistSaving}
-                className="w-full rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-70"
+                className="btn btn-primary w-full"
               >
                 {isArtistSaving
                   ? editingArtistId
@@ -450,41 +606,39 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={onCancelArtistEdit}
-                  className="w-full rounded-xl border border-[#d7c9b2] bg-white px-4 py-2 text-sm font-semibold text-[#5f5444] transition hover:bg-[#f7efe3]"
+                  className="btn btn-secondary w-full"
                 >
                   Cancel Artist Edit
                 </button>
               ) : null}
             </form>
 
-            {artistError ? <p className="mt-3 text-sm text-[var(--danger)]">{artistError}</p> : null}
+            {artistError ? <p className="status-box status-error mt-3">{artistError}</p> : null}
           </div>
 
           <div ref={lyricsFormRef} className="card rounded-3xl p-6">
-            <h2 className="text-3xl font-semibold leading-tight">Manage Lyrics</h2>
-            <p className="mt-2 text-sm text-[#4e4537]">
+            <h2 className="display-title">Manage Lyrics</h2>
+            <p className="body-copy mt-2">
               {editingLyricId ? "Edit an existing lyric entry." : "Add new lyrics to the database."}
             </p>
 
             <form onSubmit={onSubmitLyrics} className="mt-6 space-y-3">
-              <label className="block">
-                <span className="mono text-xs uppercase tracking-widest text-[#685d4d]">Title</span>
+              <label className="ui-label">
+                <span>Title</span>
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   required
-                  className="mt-1 w-full rounded-xl border border-[#d7c9b2] bg-white px-3 py-2 text-sm outline-none ring-[#0f8a6f]/35 focus:ring-4"
+                  className="ui-input"
                   placeholder="Song title"
                 />
               </label>
 
-              <label className="block">
-                <span className="mono text-xs uppercase tracking-widest text-[#685d4d]">
-                  Artist Profile
-                </span>
-                <div className="mt-2 flex flex-wrap gap-2 rounded-xl border border-[#d7c9b2] bg-white p-3">
+              <label className="ui-label">
+                <span>Artist Profile</span>
+                <div className="card mt-2 flex flex-wrap gap-2 rounded-xl p-3">
                   {artistProfiles.length === 0 ? (
-                    <p className="text-xs text-[#746a5b]">No artist profiles yet.</p>
+                    <p className="body-copy text-xs">No artist profiles yet.</p>
                   ) : (
                     artistProfiles.map((profile) => {
                       const isSelected = selectedArtistIds.includes(String(profile.id));
@@ -494,11 +648,7 @@ export default function AdminPage() {
                           type="button"
                           onClick={() => onToggleArtistSelection(String(profile.id))}
                           aria-pressed={isSelected}
-                          className={`rounded-full border px-3 py-1 text-xs transition ${
-                            isSelected
-                              ? "border-[var(--accent)] bg-[var(--accent)] text-white"
-                              : "border-[#d7c9b2] bg-[#fffcf6] text-[#5f5444] hover:bg-[#f4ecdf]"
-                          }`}
+                          className={`btn btn-mono ${isSelected ? "btn-primary" : "btn-secondary"}`}
                         >
                           {profile.name}
                         </button>
@@ -506,43 +656,39 @@ export default function AdminPage() {
                     })
                   )}
                 </div>
-                <p className="mt-1 text-xs text-[#746a5b]">
+                <p className="body-copy mt-1 text-xs">
                   Click artist names to toggle selection.
                 </p>
               </label>
 
-              <label className="block">
-                <span className="mono text-xs uppercase tracking-widest text-[#685d4d]">
-                  YouTube Link (optional)
-                </span>
+              <label className="ui-label">
+                <span>YouTube Link (optional)</span>
                 <input
                   value={youtubeUrl}
                   onChange={(e) => setYoutubeUrl(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-[#d7c9b2] bg-white px-3 py-2 text-sm outline-none ring-[#0f8a6f]/35 focus:ring-4"
+                  className="ui-input"
                   placeholder="https://youtube.com/watch?v=..."
                 />
               </label>
 
-              <label className="block">
-                <span className="mono text-xs uppercase tracking-widest text-[#685d4d]">
-                  Spotify Link (optional)
-                </span>
+              <label className="ui-label">
+                <span>Spotify Link (optional)</span>
                 <input
                   value={spotifyUrl}
                   onChange={(e) => setSpotifyUrl(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-[#d7c9b2] bg-white px-3 py-2 text-sm outline-none ring-[#0f8a6f]/35 focus:ring-4"
+                  className="ui-input"
                   placeholder="https://open.spotify.com/track/..."
                 />
               </label>
 
-              <label className="block">
-                <span className="mono text-xs uppercase tracking-widest text-[#685d4d]">Lyrics</span>
+              <label className="ui-label">
+                <span>Lyrics</span>
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   required
                   rows={6}
-                  className="mt-1 w-full resize-y rounded-xl border border-[#d7c9b2] bg-white px-3 py-2 text-sm outline-none ring-[#0f8a6f]/35 focus:ring-4"
+                  className="ui-textarea"
                   placeholder="Paste lyrics..."
                 />
               </label>
@@ -550,7 +696,7 @@ export default function AdminPage() {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="w-full rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-70"
+                className="btn btn-primary w-full"
               >
                 {isSaving ? "Saving..." : editingLyricId ? "Update Lyric" : "Add Lyric"}
               </button>
@@ -558,37 +704,40 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={onCancelEdit}
-                  className="w-full rounded-xl border border-[#d7c9b2] bg-white px-4 py-2 text-sm font-semibold text-[#5f5444] transition hover:bg-[#f7efe3]"
+                  className="btn btn-secondary w-full"
                 >
                   Cancel Edit
                 </button>
               ) : null}
             </form>
 
-            {error ? <p className="mt-3 text-sm text-[var(--danger)]">{error}</p> : null}
+            {error ? <p className="status-box status-error mt-3">{error}</p> : null}
           </div>
         </section>
 
         <section className="space-y-6">
           <div className="card rounded-3xl p-6">
-            <h2 className="text-2xl font-semibold">Artist Profiles</h2>
-            <p className="text-sm text-[#4e4537]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-2xl font-semibold">Artist Profiles</h2>
+              <div className="ui-chip">{artistProfiles.length} total</div>
+            </div>
+            <p className="body-copy">
               {artistProfiles.length} artist profile{artistProfiles.length === 1 ? "" : "s"}
             </p>
 
             <div className="mt-4 space-y-3">
               {isArtistLoading ? (
-                <p className="text-sm text-[#6b604e]">Loading artist profiles...</p>
+                <p className="body-copy">Loading artist profiles...</p>
               ) : artistProfiles.length === 0 ? (
-                <p className="text-sm text-[#6b604e]">No artist profiles yet.</p>
+                <p className="body-copy">No artist profiles yet.</p>
               ) : (
                 artistProfiles.map((profile) => (
                   <article
                     key={profile.id}
-                    className={`rounded-2xl border bg-[#fffcf6] p-4 ${
+                    className={`card rounded-2xl p-4 ${
                       String(profile.id) === activeLyricsArtistId
                         ? "border-[var(--accent)]"
-                        : "border-[#e1d4c0]"
+                        : ""
                     }`}
                   >
                     <button
@@ -602,12 +751,12 @@ export default function AdminPage() {
                     >
                       {profile.name}
                     </button>
-                    <p className="mono mt-1 text-xs text-[#746a5b]">{profile.genre || "No genre set."}</p>
+                    <p className="mono mt-1 text-xs text-[var(--muted)]">{profile.genre || "No genre set."}</p>
                     <div className="mt-2">
                       <button
                         type="button"
                         onClick={() => onEditArtist(profile)}
-                        className="mono rounded-md border border-[#d7c9b2] bg-white px-2 py-1 text-[10px] uppercase tracking-widest text-[#5f5444]"
+                        className="btn btn-secondary btn-mono"
                       >
                         Edit Artist
                       </button>
@@ -619,22 +768,25 @@ export default function AdminPage() {
           </div>
 
           <div className="card rounded-3xl p-6">
-            <h2 className="text-2xl font-semibold">Latest Lyrics Entries</h2>
-            <p className="text-sm text-[#4e4537]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-2xl font-semibold">Latest Lyrics Entries</h2>
+              <div className="ui-chip">{filteredLyrics.length} shown</div>
+            </div>
+            <p className="body-copy">
               {filteredLyrics.length} lyric{filteredLyrics.length === 1 ? "" : "s"} shown
             </p>
             <div className="mt-3 space-y-2">
               <input
                 value={lyricsArtistSearch}
                 onChange={(e) => setLyricsArtistSearch(e.target.value)}
-                className="w-full rounded-xl border border-[#d7c9b2] bg-white px-3 py-2 text-sm outline-none ring-[#0f8a6f]/35 focus:ring-4"
+                className="ui-input"
                 placeholder="Search artist songs by artist name..."
               />
               {activeLyricsArtist ? (
                 <button
                   type="button"
                   onClick={() => setActiveLyricsArtistId(null)}
-                  className="mono rounded-md border border-[#d7c9b2] bg-white px-2 py-1 text-[10px] uppercase tracking-widest text-[#5f5444]"
+                  className="btn btn-secondary btn-mono"
                 >
                   Clear artist filter: {activeLyricsArtist.name}
                 </button>
@@ -643,23 +795,23 @@ export default function AdminPage() {
 
             <div className="mt-4 space-y-3">
               {isLoading ? (
-                <p className="text-sm text-[#6b604e]">Loading lyrics...</p>
+                <p className="body-copy">Loading lyrics...</p>
               ) : filteredLyrics.length === 0 ? (
-                <p className="text-sm text-[#6b604e]">
+                <p className="body-copy">
                   {lyrics.length === 0 ? "No lyrics yet." : "No lyrics found for this artist filter."}
                 </p>
               ) : (
                 filteredLyrics.map((item) => (
-                  <article key={item.id} className="rounded-2xl border border-[#e1d4c0] bg-[#fffcf6] p-4">
+                  <article key={item.id} className="card rounded-2xl p-4">
                     <header className="mb-2">
                       <h3 className="text-lg font-semibold">{item.title}</h3>
-                      <p className="mono text-xs text-[#726758]">{item.artist}</p>
+                      <p className="mono text-xs text-[var(--muted)]">{item.artist}</p>
                     </header>
                     <div className="mb-2">
                       <button
                         type="button"
                         onClick={() => onEditLyric(item)}
-                        className="mono rounded-md border border-[#d7c9b2] bg-white px-2 py-1 text-[10px] uppercase tracking-widest text-[#5f5444]"
+                        className="btn btn-secondary btn-mono"
                       >
                         Edit
                       </button>
@@ -670,7 +822,7 @@ export default function AdminPage() {
                           href={item.youtube_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mono rounded-md border border-[#d7c9b2] bg-white px-2 py-1 text-[10px] uppercase tracking-widest text-[#5f5444]"
+                          className="btn btn-secondary btn-mono"
                         >
                           YouTube
                         </a>
@@ -680,13 +832,13 @@ export default function AdminPage() {
                           href={item.spotify_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mono rounded-md border border-[#d7c9b2] bg-white px-2 py-1 text-[10px] uppercase tracking-widest text-[#5f5444]"
+                          className="btn btn-secondary btn-mono"
                         >
                           Spotify
                         </a>
                       ) : null}
                     </div>
-                    <p className="line-clamp-3 whitespace-pre-wrap text-sm text-[#332d24]">
+                    <p className="line-clamp-3 whitespace-pre-wrap text-sm text-[var(--muted)]">
                       {item.lyrics}
                     </p>
                   </article>
