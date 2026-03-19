@@ -70,7 +70,7 @@ export default function RequestSongPage() {
           <div className="grid grid-cols-1 lg:grid-cols-[0.92fr_1.08fr]">
             <aside className="border-b border-[var(--line)] bg-[var(--surface-soft)] p-6 lg:border-r lg:border-b-0">
               <p className="eyebrow">Request Queue</p>
-              <h1 className="display-title mt-3">Request a song for Lyric Atlas.</h1>
+              <h1 className="display-title mt-3">Request a song for Hexora.</h1>
               <p className="body-copy mt-3">
                 Share exact song and artist names so we can verify and add lyrics faster.
               </p>

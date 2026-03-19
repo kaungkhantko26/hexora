@@ -5,8 +5,8 @@ import ThemeToggle from "@/components/theme-toggle";
 import WelcomeTyping from "@/components/welcome-typing";
 
 export const metadata: Metadata = {
-  title: "Lyric Atlas",
-  description: "Lyric Atlas - curated lyrics and artist discovery powered by Next.js and Supabase",
+  title: "Hexora",
+  description: "Hexora - curated lyrics and artist discovery powered by Next.js and Supabase",
 };
 
 export default function RootLayout({
@@ -33,7 +33,7 @@ export default function RootLayout({
           <div className="flex-1">{children}</div>
           <footer className="mx-auto mt-6 w-full max-w-6xl px-4 pb-6 md:px-8">
             <div className="card w-full overflow-hidden rounded-2xl px-4 py-4 text-center">
-              <p className="eyebrow">Copyright 2026 Lyric Atlas</p>
+              <p className="eyebrow">Copyright 2026 Hexora</p>
               <p className="mt-1 break-words text-xs leading-relaxed text-[var(--muted)]">
                 Policy: Content is protected. Copying, republishing, or redistribution without permission is not allowed.
               </p>

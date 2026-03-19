@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const MESSAGE = "Welcome to Lyric Atlas";
+const MESSAGE = "Welcome to Hexora";
 const TYPE_DELAY_MS = 70;
 const HOLD_MS = 950;
 const FADE_MS = 420;

@@ -6,10 +6,10 @@ export default function AboutPage() {
       <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 md:px-8">
         <UserNav />
         <section className="card rounded-3xl p-6 md:p-8">
-          <p className="eyebrow">About Lyric Atlas</p>
+          <p className="eyebrow">About Hexora</p>
           <h1 className="display-title mt-3">A modern lyrics hub built for rapid music discovery.</h1>
           <p className="body-copy mt-3 max-w-3xl">
-            Lyric Atlas organizes songs, artists, and lyrics into a fast path: search instantly, open full details, and move through connected music pages.
+            Hexora organizes songs, artists, and lyrics into a fast path: search instantly, open full details, and move through connected music pages.
           </p>
           <p className="body-copy mt-3 max-w-3xl">
             The site is powered by Next.js and Supabase, with an admin dashboard for content management and a public request flow for new songs.

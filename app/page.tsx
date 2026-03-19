@@ -66,7 +66,7 @@ export default function Home() {
         <section className="card rounded-3xl p-6 md:p-8">
           <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
             <div>
-              <p className="eyebrow">Lyric Atlas Library</p>
+              <p className="eyebrow">Hexora Library</p>
               <h1 className="display-title mt-3">Find lyrics by artist, song title, or both.</h1>
               <p className="body-copy mt-3 max-w-2xl">
                 Search the library instantly, open full lyrics, and jump between artist and song pages without leaving the flow.

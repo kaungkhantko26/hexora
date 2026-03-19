@@ -1,6 +1,6 @@
-# Lyric Atlas 🎵
+# Hexora 🎵
 
-Lyric Atlas is a lightweight lyrics website focused on making songs easier to **discover, organize, and read in one place**.
+Hexora is a lightweight lyrics website focused on making songs easier to **discover, organize, and read in one place**.
 
 **Live demo:** https://hexora.kaungkhantko.top/
 
@@ -23,7 +23,7 @@ Lyric Atlas is a lightweight lyrics website focused on making songs easier to **
 - `/` — Find Song Lyrics (search)
 - `/artist-profiles/` — Artist Profile List
 - `/song-names/` — Song Names library
-- `/about/` — About Lyric Atlas
+- `/about/` — About Hexora
 
 ---
 
