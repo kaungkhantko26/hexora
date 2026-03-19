@@ -66,6 +66,7 @@ export default function AdminPage() {
   const [adminEmail, setAdminEmail] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [loginWebsite, setLoginWebsite] = useState("");
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
   const [authError, setAuthError] = useState("");
 
@@ -199,6 +200,10 @@ export default function AdminPage() {
     setIsAuthSubmitting(true);
     setAuthError("");
     try {
+      if (loginWebsite.trim()) {
+        throw new Error("Invalid sign in request.");
+      }
+
       const email = loginEmail.trim();
       const password = loginPassword;
       if (!email || !password) throw new Error("Email and password are required.");
@@ -509,6 +514,22 @@ export default function AdminPage() {
             <p className="body-copy mt-2">Sign in is required to open the admin dashboard.</p>
 
             <form onSubmit={onSignIn} className="mt-6 space-y-4">
+              <div className="hidden" aria-hidden="true">
+                <label htmlFor="admin-website" className="ui-label">
+                  <span>Website</span>
+                  <input
+                    id="admin-website"
+                    name="website"
+                    type="text"
+                    value={loginWebsite}
+                    onChange={(e) => setLoginWebsite(e.target.value)}
+                    tabIndex={-1}
+                    autoComplete="off"
+                    className="ui-input"
+                  />
+                </label>
+              </div>
+
               <label className="ui-label">
                 <span>Email</span>
                 <input
