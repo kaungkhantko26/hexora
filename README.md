@@ -2,7 +2,7 @@
 
 Lyric Atlas is a lightweight lyrics website focused on making songs easier to **discover, organize, and read in one place**.
 
-**Live demo:** https://hexoramm.netlify.app/
+**Live demo:** https://hexora.kaungkhantko.top/
 
 ---
 
