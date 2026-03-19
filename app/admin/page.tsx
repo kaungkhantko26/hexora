@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { formatAppError, getSupabaseBrowserClient, type ArtistProfile, type Lyric } from "@/lib/supabase";
+import {
+  formatAppError,
+  getBrowserRedirectUrl,
+  getSupabaseBrowserClient,
+  type ArtistProfile,
+  type Lyric,
+} from "@/lib/supabase";
 
 function sanitizeMusicUrl(value: string, provider: "youtube" | "spotify"): string | null {
   const input = value.trim();
@@ -68,7 +74,9 @@ export default function AdminPage() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginWebsite, setLoginWebsite] = useState("");
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
+  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [authNotice, setAuthNotice] = useState("");
 
   const activeLyricsArtist = activeLyricsArtistId
     ? artistProfiles.find((profile) => String(profile.id) === activeLyricsArtistId) ?? null
@@ -199,6 +207,7 @@ export default function AdminPage() {
 
     setIsAuthSubmitting(true);
     setAuthError("");
+    setAuthNotice("");
     try {
       if (loginWebsite.trim()) {
         throw new Error("Invalid sign in request.");
@@ -217,6 +226,36 @@ export default function AdminPage() {
       setAuthError(formatAppError(e, "Failed to sign in."));
     } finally {
       setIsAuthSubmitting(false);
+    }
+  }
+
+  async function onResendConfirmation() {
+    const email = loginEmail.trim();
+    if (!email) {
+      setAuthError("Enter your admin email first.");
+      setAuthNotice("");
+      return;
+    }
+
+    setIsResendingConfirmation(true);
+    setAuthError("");
+    setAuthNotice("");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: {
+          emailRedirectTo: getBrowserRedirectUrl("/auth/callback?next=/admin"),
+        },
+      });
+
+      if (error) throw new Error(error.message);
+      setAuthNotice("Confirmation email sent. Check your inbox.");
+    } catch (e) {
+      setAuthError(formatAppError(e, "Failed to resend confirmation email."));
+    } finally {
+      setIsResendingConfirmation(false);
     }
   }
 
@@ -561,7 +600,22 @@ export default function AdminPage() {
               </button>
             </form>
 
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href="/reset-password" className="btn btn-secondary btn-mono">
+                Forgot Password
+              </Link>
+              <button
+                type="button"
+                onClick={onResendConfirmation}
+                disabled={isResendingConfirmation}
+                className="btn btn-secondary btn-mono"
+              >
+                {isResendingConfirmation ? "Sending..." : "Resend Confirmation"}
+              </button>
+            </div>
+
             {authError ? <p className="status-box status-error mt-4">{authError}</p> : null}
+            {authNotice ? <p className="status-box status-success mt-4">{authNotice}</p> : null}
 
             <div className="mt-4">
               <Link href="/" className="btn btn-secondary btn-mono">

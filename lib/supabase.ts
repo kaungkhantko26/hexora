@@ -34,6 +34,11 @@ export function formatAppError(error: unknown, fallbackMessage: string): string 
   return fallbackMessage;
 }
 
+export function getBrowserRedirectUrl(path: string): string {
+  if (typeof window === "undefined") return path;
+  return new URL(path, window.location.origin).toString();
+}
+
 export type Lyric = {
   id: number;
   title: string;
