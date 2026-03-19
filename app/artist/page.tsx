@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { getSupabaseBrowserClient, type ArtistProfile, type Lyric } from "@/lib/supabase";
+import { formatAppError, getSupabaseBrowserClient, type ArtistProfile, type Lyric } from "@/lib/supabase";
 import UserNav from "@/components/user-nav";
 
 function ArtistSongsContent() {
@@ -80,7 +80,7 @@ function ArtistSongsContent() {
         if (legacyError) throw new Error(legacyError.message);
         setSongs(legacySongs ?? []);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load artist songs.");
+        setError(formatAppError(e, "Failed to load artist songs."));
       } finally {
         setIsLoading(false);
       }

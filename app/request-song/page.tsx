@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import UserNav from "@/components/user-nav";
-import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { formatAppError, getSupabaseBrowserClient } from "@/lib/supabase";
 
 const NOTE_MAX = 280;
 
@@ -56,7 +56,7 @@ export default function RequestSongPage() {
       setNote("");
       setSuccessMessage("Request submitted.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to submit request.");
+      setError(formatAppError(e, "Failed to submit request."));
     } finally {
       setIsSaving(false);
     }

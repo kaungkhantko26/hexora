@@ -14,20 +14,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const gaId = "G-RCYY2WJCPF";
+  const gaId = process.env.NEXT_PUBLIC_GA_ID;
 
   return (
     <html lang="en">
       <body className="antialiased">
-        <Script src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} strategy="afterInteractive" />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${gaId}');
-          `}
-        </Script>
+        {gaId ? <Script src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} strategy="afterInteractive" /> : null}
+        {gaId ? (
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${gaId}');
+            `}
+          </Script>
+        ) : null}
         <WelcomeTyping />
         <div className="flex min-h-screen flex-col">
           <div className="flex-1">{children}</div>

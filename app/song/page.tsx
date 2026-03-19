@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { getSupabaseBrowserClient, type Lyric } from "@/lib/supabase";
+import { formatAppError, getSupabaseBrowserClient, type Lyric } from "@/lib/supabase";
 import UserNav from "@/components/user-nav";
 
 type YouTubePlayer = {
@@ -54,18 +54,34 @@ function ensureYoutubeIframeApi(): Promise<void> {
   if (window.YT?.Player) return Promise.resolve();
   if (youtubeApiReadyPromise) return youtubeApiReadyPromise;
 
-  youtubeApiReadyPromise = new Promise((resolve) => {
+  youtubeApiReadyPromise = new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      youtubeApiReadyPromise = null;
+      reject(new Error("YouTube player could not load."));
+    }, 10000);
+
     const previousReady = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => {
       previousReady?.();
+      window.clearTimeout(timeout);
       resolve();
     };
 
     const existingScript = document.querySelector<HTMLScriptElement>('script[src="https://www.youtube.com/iframe_api"]');
-    if (existingScript) return;
+    const onScriptError = () => {
+      window.clearTimeout(timeout);
+      youtubeApiReadyPromise = null;
+      reject(new Error("YouTube player could not load."));
+    };
+
+    if (existingScript) {
+      existingScript.addEventListener("error", onScriptError, { once: true });
+      return;
+    }
 
     const script = document.createElement("script");
     script.src = "https://www.youtube.com/iframe_api";
+    script.addEventListener("error", onScriptError, { once: true });
     document.head.appendChild(script);
   });
 
@@ -136,6 +152,7 @@ function SongDetailContent() {
   const [song, setSong] = useState<Lyric | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [youtubeLoadError, setYoutubeLoadError] = useState("");
   const [useNoCookiePlayer, setUseNoCookiePlayer] = useState(false);
 
   const [isLiveMode, setIsLiveMode] = useState(false);
@@ -195,7 +212,7 @@ function SongDetailContent() {
         if (!data) throw new Error("Song not found.");
         setSong(data);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load song.");
+        setError(formatAppError(e, "Failed to load song."));
       } finally {
         setIsLoading(false);
       }
@@ -211,6 +228,7 @@ function SongDetailContent() {
     setLiveSpeed("1");
     setSyncPace("0.9");
     setSyncDelaySeconds(2);
+    setYoutubeLoadError("");
     setYoutubePlayerReady(false);
     setYoutubePlaybackTime(0);
     setYoutubeDuration(0);
@@ -231,34 +249,41 @@ function SongDetailContent() {
     const videoId = youtubeVideoId;
 
     async function setupPlayer() {
-      await ensureYoutubeIframeApi();
-      if (isCancelled || !window.YT?.Player) return;
+      try {
+        setYoutubeLoadError("");
+        await ensureYoutubeIframeApi();
+        if (isCancelled || !window.YT?.Player) return;
 
-      youtubePlayerRef.current?.destroy();
-      youtubePlayerRef.current = new window.YT.Player(YOUTUBE_PLAYER_ID, {
-        host: useNoCookiePlayer ? "https://www.youtube-nocookie.com" : "https://www.youtube.com",
-        videoId,
-        playerVars: {
-          playsinline: 1,
-          rel: 0,
-          modestbranding: 1,
-          iv_load_policy: 3,
-        },
-        events: {
-          onReady: () => {
-            if (!youtubePlayerRef.current) return;
-            setYoutubePlayerReady(true);
-            const duration = youtubePlayerRef.current.getDuration();
-            if (Number.isFinite(duration) && duration > 0) {
-              setYoutubeDuration(duration);
-            }
+        youtubePlayerRef.current?.destroy();
+        youtubePlayerRef.current = new window.YT.Player(YOUTUBE_PLAYER_ID, {
+          host: useNoCookiePlayer ? "https://www.youtube-nocookie.com" : "https://www.youtube.com",
+          videoId,
+          playerVars: {
+            playsinline: 1,
+            rel: 0,
+            modestbranding: 1,
+            iv_load_policy: 3,
           },
-          onStateChange: ({ data }) => {
-            const playingState = window.YT?.PlayerState.PLAYING ?? 1;
-            setIsLivePlaying(data === playingState);
+          events: {
+            onReady: () => {
+              if (!youtubePlayerRef.current) return;
+              setYoutubePlayerReady(true);
+              setYoutubeLoadError("");
+              const duration = youtubePlayerRef.current.getDuration();
+              if (Number.isFinite(duration) && duration > 0) {
+                setYoutubeDuration(duration);
+              }
+            },
+            onStateChange: ({ data }) => {
+              const playingState = window.YT?.PlayerState.PLAYING ?? 1;
+              setIsLivePlaying(data === playingState);
+            },
           },
-        },
-      });
+        });
+      } catch (e) {
+        if (isCancelled) return;
+        setYoutubeLoadError(formatAppError(e, "Unable to load the YouTube player."));
+      }
     }
 
     setupPlayer();
@@ -544,6 +569,8 @@ function SongDetailContent() {
                     <div id={YOUTUBE_PLAYER_ID} className="h-[210px] w-full" />
                   </div>
                 ) : null}
+
+                {youtubeLoadError ? <p className="status-box status-error">{youtubeLoadError}</p> : null}
 
                 {youtubeVideoId ? (
                   <button

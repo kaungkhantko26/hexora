@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { getSupabaseBrowserClient, type ArtistProfile } from "@/lib/supabase";
+import { formatAppError, getSupabaseBrowserClient, type ArtistProfile } from "@/lib/supabase";
 import UserNav from "@/components/user-nav";
 
 export default function ArtistProfilesPage() {
@@ -32,7 +32,7 @@ export default function ArtistProfilesPage() {
       );
       setArtistProfiles(sorted);
     } catch (e) {
-      setArtistError(e instanceof Error ? e.message : "Failed to load artist profiles.");
+      setArtistError(formatAppError(e, "Failed to load artist profiles."));
     } finally {
       setIsArtistLoading(false);
     }

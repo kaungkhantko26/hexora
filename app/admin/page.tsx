@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { getSupabaseBrowserClient, type ArtistProfile, type Lyric } from "@/lib/supabase";
+import { formatAppError, getSupabaseBrowserClient, type ArtistProfile, type Lyric } from "@/lib/supabase";
 
 function sanitizeMusicUrl(value: string, provider: "youtube" | "spotify"): string | null {
   const input = value.trim();
@@ -101,7 +101,7 @@ export default function AdminPage() {
       if (error) throw new Error(error.message);
       setLyrics(data ?? []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load lyrics.");
+      setError(formatAppError(e, "Failed to load lyrics."));
     } finally {
       setIsLoading(false);
     }
@@ -125,55 +125,64 @@ export default function AdminPage() {
         setSelectedArtistIds((prev) => (prev.length > 0 ? prev : [String(sorted[0].id)]));
       }
     } catch (e) {
-      setArtistError(e instanceof Error ? e.message : "Failed to load artist profiles.");
+      setArtistError(formatAppError(e, "Failed to load artist profiles."));
     } finally {
       setIsArtistLoading(false);
     }
   }
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
     let isActive = true;
+    let subscription: { unsubscribe: () => void } | null = null;
 
     async function initAuth() {
-      const { data, error } = await supabase.auth.getSession();
-      if (!isActive) return;
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data, error } = await supabase.auth.getSession();
+        if (!isActive) return;
 
-      if (error) {
-        setAuthStatus("unauthenticated");
-        setAuthError("Unable to check admin session.");
-        return;
-      }
+        if (error) throw new Error(error.message);
 
-      if (data.session?.user) {
-        setAdminEmail(data.session.user.email ?? "");
-        setAuthStatus("authenticated");
-        setAuthError("");
-      } else {
+        if (data.session?.user) {
+          setAdminEmail(data.session.user.email ?? "");
+          setAuthStatus("authenticated");
+          setAuthError("");
+        } else {
+          setAuthStatus("unauthenticated");
+        }
+      } catch (e) {
+        if (!isActive) return;
         setAuthStatus("unauthenticated");
+        setAuthError(formatAppError(e, "Unable to check admin session."));
       }
     }
 
-    initAuth();
+    try {
+      const supabase = getSupabaseBrowserClient();
+      initAuth();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!isActive) return;
+      const authListener = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!isActive) return;
 
-      if (session?.user) {
-        setAdminEmail(session.user.email ?? "");
-        setAuthStatus("authenticated");
-        setAuthError("");
-      } else {
-        setAdminEmail("");
-        setAuthStatus("unauthenticated");
-      }
-    });
+        if (session?.user) {
+          setAdminEmail(session.user.email ?? "");
+          setAuthStatus("authenticated");
+          setAuthError("");
+        } else {
+          setAdminEmail("");
+          setAuthStatus("unauthenticated");
+        }
+      });
+
+      subscription = authListener.data.subscription;
+    } catch (e) {
+      setAuthStatus("unauthenticated");
+      setAuthError(formatAppError(e, "Unable to start admin session."));
+    }
 
     return () => {
       isActive = false;
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 
@@ -200,7 +209,7 @@ export default function AdminPage() {
 
       setLoginPassword("");
     } catch (e) {
-      setAuthError(e instanceof Error ? e.message : "Failed to sign in.");
+      setAuthError(formatAppError(e, "Failed to sign in."));
     } finally {
       setIsAuthSubmitting(false);
     }
@@ -208,10 +217,12 @@ export default function AdminPage() {
 
   async function onSignOut() {
     setAuthError("");
-    const supabase = getSupabaseBrowserClient();
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      setAuthError(error.message);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw new Error(error.message);
+    } catch (e) {
+      setAuthError(formatAppError(e, "Failed to sign out."));
     }
   }
 
@@ -288,7 +299,7 @@ export default function AdminPage() {
       setArtistName("");
       setArtistGenre("");
     } catch (e) {
-      setArtistError(e instanceof Error ? e.message : "Failed to save artist profile.");
+      setArtistError(formatAppError(e, "Failed to save artist profile."));
     } finally {
       setIsArtistSaving(false);
     }
@@ -408,7 +419,7 @@ export default function AdminPage() {
       setSpotifyUrl("");
       setContent("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to save lyric.");
+      setError(formatAppError(e, "Failed to save lyric."));
     } finally {
       setIsSaving(false);
     }

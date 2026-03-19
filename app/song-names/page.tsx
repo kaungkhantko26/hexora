@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getSupabaseBrowserClient, type ArtistProfile, type Lyric } from "@/lib/supabase";
+import { formatAppError, getSupabaseBrowserClient, type ArtistProfile, type Lyric } from "@/lib/supabase";
 import UserNav from "@/components/user-nav";
 
 export default function SongNamesPage() {
@@ -48,7 +48,7 @@ export default function SongNamesPage() {
         }
         setArtistSlugByName(slugMap);
       } catch (e) {
-        setSongListError(e instanceof Error ? e.message : "Failed to load song names.");
+        setSongListError(formatAppError(e, "Failed to load song names."));
       } finally {
         setIsSongListLoading(false);
       }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { getSupabaseBrowserClient, type Lyric } from "@/lib/supabase";
+import { formatAppError, getSupabaseBrowserClient, type Lyric } from "@/lib/supabase";
 import UserNav from "@/components/user-nav";
 
 export default function Home() {
@@ -44,7 +44,7 @@ export default function Home() {
       if (error) throw new Error(error.message);
       setResults(data ?? []);
     } catch (e) {
-      setSearchError(e instanceof Error ? e.message : "Failed to search lyrics.");
+      setSearchError(formatAppError(e, "Failed to search lyrics."));
     } finally {
       setIsLoading(false);
     }

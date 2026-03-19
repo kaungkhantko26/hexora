@@ -19,6 +19,21 @@ export function getSupabaseBrowserClient() {
   return browserClient;
 }
 
+export function formatAppError(error: unknown, fallbackMessage: string): string {
+  if (error instanceof Error) {
+    const message = error.message.trim();
+    if (message) {
+      if (/load failed|failed to fetch|networkerror|network request failed/i.test(message)) {
+        return "Unable to reach the database right now. Check your connection and try again.";
+      }
+
+      return message;
+    }
+  }
+
+  return fallbackMessage;
+}
+
 export type Lyric = {
   id: number;
   title: string;
